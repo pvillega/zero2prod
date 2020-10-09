@@ -1,31 +1,57 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 use sqlx::PgPool;
 
 use chrono::Utc;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
-pub struct FormData {
+pub struct SubscribeRequest {
     email: String,
-    name: String
+    name: String,
 }
 
-pub async fn subscribe(form: web::Form<FormData>,  connection: web::Data<PgPool>,)  -> Result<HttpResponse, HttpResponse> {
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(payload, pool),
+    fields(
+        request_id=%Uuid::new_v4(),
+        email = %payload.email,
+        name = %payload.name
+    )
+)]
+pub async fn subscribe(
+    payload: web::Form<SubscribeRequest>,
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, HttpResponse> {
+    insert_subscriber(&pool, &payload)
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[tracing::instrument(
+    name = "Saving new subscriber details in the database",
+    skip(payload, pool)
+)]
+pub async fn insert_subscriber(
+    pool: &PgPool,
+    payload: &SubscribeRequest,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO subscriptions (id, email, name, subscribed_at)
-        VALUES ($1, $2, $3, $4)
-        "#,
+    INSERT INTO subscriptions (id, email, name, subscribed_at)
+    VALUES ($1, $2, $3, $4)
+            "#,
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        payload.email,
+        payload.name,
         Utc::now()
     )
-        .execute(connection.get_ref())
-        .await
-        .map_err(|e| {
-            eprintln!("Failed to execute query: {}", e);
-            HttpResponse::InternalServerError().finish()
-        })?;
-    Ok(HttpResponse::Ok().finish())
+    .execute(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(())
 }
