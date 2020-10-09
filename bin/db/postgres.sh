@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 dir="$( cd "$( dirname "$0" )" && pwd )"
-cd "${dir}"/.. || exit
+cd "${dir}"/../.. || exit
 
 >&2 echo "Start Postgres using docker"
 set -x
