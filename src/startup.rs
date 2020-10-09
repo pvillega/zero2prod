@@ -2,6 +2,7 @@ use std::net::TcpListener;
 
 use actix_web::{App, HttpServer, web};
 use actix_web::dev::Server;
+use actix_web::middleware::Logger;
 use sqlx::PgPool;
 
 use crate::routes::greet;
@@ -15,6 +16,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Er
     let server = HttpServer::new(move || {
         // Note that order matters
         App::new()
+            .wrap(Logger::default()) // Logger middleware
             .route("/health_check", web::get().to(health_check))
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
