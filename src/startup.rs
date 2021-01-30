@@ -1,18 +1,21 @@
-use std::net::TcpListener;
-
-use actix_web::dev::Server;
-use actix_web::{web, App, HttpServer};
-use sqlx::PgPool;
-
+use crate::email_client::EmailClient;
 use crate::routes::greet;
 use crate::routes::health_check;
 use crate::routes::subscribe;
+use actix_web::dev::Server;
+use actix_web::{web, App, HttpServer};
+use sqlx::PgPool;
+use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 
-pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Error> {
+pub fn run(
+    listener: TcpListener,
+    db_pool: PgPool,
+    email_client: EmailClient,
+) -> Result<Server, std::io::Error> {
     // Wrap the pool in an Arc smart pointer
     let db_pool = web::Data::new(db_pool);
-
+    let email_client = web::Data::new(email_client);
     let server = HttpServer::new(move || {
         // Note that order matters
         App::new()
@@ -26,6 +29,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Er
             // of the existing one - an unnecessary indirection.
             // .app_data instead does not perform an additional layer of wrapping.
             .app_data(db_pool.clone())
+            .app_data(email_client.clone())
     })
     .listen(listener)?
     .run();
