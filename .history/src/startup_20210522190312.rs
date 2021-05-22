@@ -3,7 +3,6 @@ use crate::email_client::EmailClient;
 use crate::routes::greet;
 use crate::routes::health_check;
 use crate::routes::subscribe;
-use crate::routes::confirm;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
@@ -83,7 +82,6 @@ fn run(
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
             .route("/subscriptions", web::post().to(subscribe))
-            .route("/subscriptions/confirm", web::get().to(confirm))
             // Our pool is already wrapped in an Arc pointer:
             // using .data would add another Arc pointer on top
             // of the existing one - an unnecessary indirection.

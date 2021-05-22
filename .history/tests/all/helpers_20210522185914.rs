@@ -1,4 +1,3 @@
-use once_cell::sync::Lazy;
 use sqlx::Executor;
 use sqlx::{Connection, PgConnection, PgPool};
 use uuid::Uuid;
